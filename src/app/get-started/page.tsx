@@ -69,7 +69,7 @@ export default function GetStarted() {
     setAnalysisResult(null);
 
     try {
-      // Always use /api/analyze (works in both vercel dev and production)
+      // Always use /api/analyze (works both in dev with vercel dev and in production)
       const apiUrl = '/api/analyze';
       
       const response = await fetch(apiUrl, {
@@ -106,7 +106,7 @@ export default function GetStarted() {
       {/* Background Image */}
       <div className="fixed inset-0 z-0">
         <Image
-          src="/bg.png"
+          src="/image.png"
           alt="Background"
           fill
           className="object-cover object-[center_40%]"

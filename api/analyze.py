@@ -6,10 +6,8 @@ import json
 import sys
 import os
 
-# Add parent directory to path to import our agent
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from backend.agent import ImpulsiveSpendingAgent
+# Import agent from same directory
+from agent import ImpulsiveSpendingAgent
 
 # Initialize agent once (cached across function calls)
 agent = None

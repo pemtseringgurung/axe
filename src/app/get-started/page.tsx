@@ -106,7 +106,7 @@ export default function GetStarted() {
       {/* Background Image */}
       <div className="fixed inset-0 z-0">
         <Image
-          src="/bg.png"
+          src="/image.png"
           alt="Background"
           fill
           className="object-cover object-[center_40%]"

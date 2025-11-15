@@ -47,3 +47,8 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+
+# Local development tools (don't push to repo)
+run_dev.py
+DEVELOPMENT.md
+api/dev_server.py

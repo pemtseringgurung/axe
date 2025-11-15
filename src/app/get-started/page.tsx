@@ -69,8 +69,12 @@ export default function GetStarted() {
     setAnalysisResult(null);
 
     try {
-      // Always use /api/analyze (works in both vercel dev and production)
-      const apiUrl = '/api/analyze';
+      // Use localhost:8000 in development, /api/analyze in production
+      const apiUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:8000/api/analyze'
+        : '/api/analyze';
+      
+      console.log('API URL:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -103,7 +107,6 @@ export default function GetStarted() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Image */}
       <div className="fixed inset-0 z-0">
         <Image
           src="/image.png"

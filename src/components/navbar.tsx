@@ -1,6 +1,20 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="w-full px-10 py-4">
@@ -15,7 +29,7 @@ export default function Navbar() {
           </Link>
           
           {/* Center Navigation - Absolute positioned to center */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-12">
+          <div className={`absolute left-1/2 -translate-x-1/2 flex items-center space-x-12 transition-opacity duration-500 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             <Link href="/" className="text-white transition-colors text-[15px] font-normal" style={{fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>
               Company
             </Link>
@@ -28,7 +42,7 @@ export default function Navbar() {
           </div>
           
           {/* CTA Button - Far Right */}
-          <Link href="/get-started" className="inline-block rounded-full bg-black text-white text-[14px] font-medium px-7 py-2.5 transition-colors hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black shadow-md" style={{fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>
+          <Link href="/get-started" className={`inline-block rounded-full bg-black text-white text-[14px] font-medium px-7 py-2.5 transition-all duration-500 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black shadow-md ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>
             Get Started Free
           </Link>
 

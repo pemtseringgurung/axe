@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Axe – Personal Spending Insight Tool
+
+A lightweight web app that helps you understand why you spend the way you do. It combines a Next.js front‑end with a Python backend that uses **LangChain** and **LangGraph** to orchestrate calls to Google Gemini.
+
+## Features
+- **Spend analysis** – Enter an amount and a short description; the AI returns the underlying reason and behavioral triggers.
+- **No impulsivity score** – Focus on qualitative insights, not a numeric rating.
+- **Responsive UI** – Clean, modern design that works on desktop and mobile.
+- **Secure config** – Secrets live in `.env.local` (git‑ignored) and are set in Vercel for production.
+- **Powered by LangChain & LangGraph** – backend agent uses LangChain’s workflow engine to manage LLM calls.
 
 ## Getting Started
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/pemtseringgurung/axe.git
+   cd axe
+   ```
+2. **Install dependencies**
+   ```bash
+   # Front‑end
+   npm install
+   # Backend (Python 3.13+)
+   pip install -r backend/requirements.txt
+   ```
+3. **Configure environment variables**
+   Create a `.env.local` in the project root:
+   ```text
+   GOOGLE_API_KEY=your-google-gemini-key
+   API_PROVIDER=google
+   MODEL_NAME=gemini-2.5-flash
+   ```
+4. **Run the app**
+   ```bash
+   # Terminal 1
+   npm run dev   # Next.js (http://localhost:3001)
+   # Terminal 2
+   python3 run_dev.py   # Flask API (http://localhost:8000/api/analyze)
+   ```
 
-First, run the development server:
+Open the front‑end URL in a browser and start analyzing your spending.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Deploying to Vercel
+- Push to GitHub, connect the repo in Vercel.
+- Add the same environment variables in Vercel’s settings.
+- Vercel builds the Next.js app; the Flask API runs as a serverless function.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Contributing
+Feel free to open issues or submit pull requests. Keep the UI minimal and the backend focused on clear, human‑readable analysis.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+MIT – see the `LICENSE` file.

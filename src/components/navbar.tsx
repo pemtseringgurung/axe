@@ -26,7 +26,7 @@ export default function Navbar() {
   }, [isMobileMenuOpen]);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-colors duration-300 ${isMobileMenuOpen ? 'bg-transparent' : (isScrolled ? 'bg-black/80 backdrop-blur-md' : 'bg-transparent')}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-colors duration-300 ${isMobileMenuOpen ? 'bg-transparent' : 'bg-transparent'}`}>
       <div className="w-full px-6 md:px-10 py-4">
         <div className="flex items-center justify-between">
           {/* Logo - Far Left */}

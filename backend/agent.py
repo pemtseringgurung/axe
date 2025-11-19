@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../.env.local'))
 
 
 class SpendingState(TypedDict):
@@ -76,49 +77,51 @@ class ImpulsiveSpendingAgent:
         workflow = StateGraph(SpendingState)
         
         # Add nodes
-        workflow.add_node("analyze_reason", self.analyze_spending_reason)
+        workflow.add_node("analyze_spending", self.analyze_spending_combined)
         workflow.add_node("generate_recommendations", self.generate_recommendations)
         
         # Define the flow
-        workflow.set_entry_point("analyze_reason")
-        workflow.add_edge("analyze_reason", "generate_recommendations")
+        workflow.set_entry_point("analyze_spending")
+        workflow.add_edge("analyze_spending", "generate_recommendations")
         workflow.add_edge("generate_recommendations", END)
         
         return workflow.compile()
     
-    def analyze_spending_reason(self, state: SpendingState) -> SpendingState:
-        """Deeply analyze why they spent impulsively - go DEEP into psychology"""
+    def analyze_spending_combined(self, state: SpendingState) -> SpendingState:
+        """
+        Combined step: Deeply analyze reason and identify triggers.
+        """
         system_prompt = """You are a behavioral psychologist mixed with a caring friend who sees through bullshit.
 
 Your expertise: Consumer psychology, behavioral economics, cognitive biases, emotional triggers, social dynamics.
 
-MISSION: Uncover the REAL underlying reason they spent impulsively. Not surface level - dig deep.
+MISSION: Analyze this spending event to uncover the truth.
+
+Output a JSON object with these 2 fields:
+1. "underlying_reason": ONE clear sentence explaining the DEEP psychological reason (be specific, not generic).
+2. "triggers": Array of 2-3 specific behavioral triggers (e.g., "Social pressure", "FOMO", "Instant gratification").
 
 Think about:
-- What psychological need were they trying to fill? (belonging, validation, status, control, comfort)
-- What cognitive bias was at play? (FOMO, scarcity mindset, social proof, instant gratification)
-- What emotion drove this? (anxiety, loneliness, inadequacy, boredom, excitement)
-- What pattern from psychology/behavioral economics explains this?
-- How does their social environment influence this?
-
-Output TWO things in JSON:
-1. "underlying_reason": ONE clear sentence explaining the DEEP psychological reason (be specific, not generic)
-2. "triggers": Array of 2-3 specific behavioral triggers
+- What psychological need were they trying to fill?
+- What cognitive bias was at play?
+- How far over budget is this?
 
 Example:
 {
-  "underlying_reason": "You're using purchases as a quick dopamine hit to cope with work stress because it feels like the only thing you can control right now.",
-  "triggers": ["Stress relief seeking", "Need for control", "Instant gratification"]
+  "underlying_reason": "You're using purchases as a quick dopamine hit to cope with work stress.",
+  "triggers": ["Stress relief seeking", "Instant gratification"]
 }
 
-Be REAL. Be SPECIFIC. Draw from actual psychology. No generic BS."""
+Be REAL. Be SPECIFIC. No generic BS."""
 
         user_message = f"""
-Amount spent: ${state['actual_spent']}
+Budget: ${state['budget_amount']}
+Spent: ${state['actual_spent']}
+Overspent by: ${state['actual_spent'] - state['budget_amount']}
 What they said: "{state['spending_reason']}"
 Category: {state['spending_category']}
 
-Go deep. What's the REAL psychological reason? Return JSON only.
+Analyze this. Return JSON only.
 """
 
         messages = [
@@ -138,8 +141,12 @@ Go deep. What's the REAL psychological reason? Return JSON only.
         
         try:
             analysis = json.loads(content)
-            underlying_reason = analysis.get("underlying_reason", "")
-            triggers = analysis.get("triggers", [])
+            underlying_reason = analysis.get("underlying_reason", "You might be spending to fill an emotional need.")
+            triggers = analysis.get("triggers", ["Emotional spending"])
+            
+            # Ensure types
+            if not isinstance(triggers, list): triggers = [str(triggers)]
+            
         except Exception as e:
             print(f"JSON parse error: {e}")
             # Fallback
@@ -151,129 +158,8 @@ Go deep. What's the REAL psychological reason? Return JSON only.
             "underlying_reason": underlying_reason,
             "behavioral_triggers": triggers[:3],
             "analysis_results": [{
-                "step": "deep_analysis",
+                "step": "combined_analysis",
                 "content": response.content
-            }]
-        }
-    
-    def identify_behavioral_triggers(self, state: SpendingState) -> SpendingState:
-        """Identify specific behavioral triggers that led to spending"""
-        system_prompt = """You identify the behavioral triggers - the REAL reasons people spend impulsively.
-
-Pick 2-3 triggers MAX from:
-- Social pressure
-- FOMO
-- Emotional state (stress/boredom/validation)
-- Status seeking
-- Peer influence
-- Instant gratification
-- Lack of planning
-
-Return ONLY a JSON array. Be specific. If it's peer pressure, say "peer pressure" not "social dynamics".
-"""
-
-        user_message = f"""
-Their reason: "{state['spending_reason']}"
-
-What are the 2-3 main triggers? Return as JSON array only.
-Example: ["Peer pressure", "FOMO"]
-"""
-
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message)
-        ]
-        
-        response = self.llm.invoke(messages)
-        
-        # Parse triggers from response
-        content = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if content.startswith('```'):
-            content = content.split('```')[1]
-            if content.startswith('json'):
-                content = content[4:]
-            content = content.strip()
-        
-        try:
-            triggers = json.loads(content)
-            # Ensure it's a list
-            if not isinstance(triggers, list):
-                triggers = [str(triggers)]
-        except Exception as e:
-            print(f"JSON parse error: {e}, content: {content}")
-            # Fallback: extract quoted strings
-            import re
-            triggers = re.findall(r'"([^"]+)"', content)
-            if not triggers:
-                # Final fallback
-                triggers = ["Social pressure", "Emotional spending"]
-        
-        # Clean up triggers - remove JSON artifacts
-        triggers = [t.strip('",[]').strip() for t in triggers if t and len(t.strip('",[]').strip()) > 2]
-        
-        return {
-            **state,
-            "behavioral_triggers": triggers[:3],  # Max 3 triggers
-            "analysis_results": [{
-                "step": "trigger_identification",
-                "content": response.content
-            }]
-        }
-    
-    def calculate_impulsivity_score(self, state: SpendingState) -> SpendingState:
-        """Calculate an impulsivity score (0-10) based on the analysis"""
-        system_prompt = """You are calculating an impulsivity score for a spending decision.
-
-Score from 0-10 where:
-0-2: Planned, rational purchase within budget
-3-4: Somewhat impulsive but justified
-5-6: Moderately impulsive, some behavioral factors
-7-8: Highly impulsive, strong behavioral influence
-9-10: Extremely impulsive, pure emotional/social decision
-
-Consider:
-- How far over budget? (${state['actual_spent']} vs ${state['budget_amount']})
-- Strength of behavioral triggers
-- Level of planning vs spontaneity
-- Rational justification vs emotional/social motivation
-
-Return ONLY a single number 0-10."""
-
-        user_message = f"""
-Budget: ${state['budget_amount']}
-Spent: ${state['actual_spent']}
-Overspent by: ${state['actual_spent'] - state['budget_amount']}
-Triggers: {', '.join(state['behavioral_triggers'])}
-Reason: {state['spending_reason']}
-
-Calculate impulsivity score (0-10):"""
-
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message)
-        ]
-        
-        response = self.llm.invoke(messages)
-        
-        # Extract score
-        try:
-            score = int(response.content.strip())
-        except:
-            # Try to find a number in the response
-            import re
-            numbers = re.findall(r'\d+', response.content)
-            score = int(numbers[0]) if numbers else 5
-        
-        score = max(0, min(10, score))  # Clamp between 0-10
-        
-        return {
-            **state,
-            "impulsive_score": score,
-            "analysis_results": [{
-                "step": "impulsivity_score",
-                "content": f"Impulsivity Score: {score}/10"
             }]
         }
     

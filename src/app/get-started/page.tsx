@@ -156,6 +156,16 @@ export default function GetStarted() {
                     name="amount-input"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Allow navigation keys, backspace, delete, tab
+                      const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+                      if (allowedKeys.includes(e.key)) return;
+
+                      // Allow digits and decimal point only
+                      if (!/^[0-9.]$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="Enter amount"
                     className="w-full bg-gray-50 text-gray-800 text-base rounded-xl px-5 pl-10 py-4 border border-gray-200 focus:outline-none focus:border-[#D4FF00] focus:bg-white transition-all placeholder:text-gray-400"
                     style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}

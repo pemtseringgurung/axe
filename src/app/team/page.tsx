@@ -33,15 +33,15 @@ export default function TeamPage() {
       <div className="relative z-10">
         <Navbar />
         <main className="max-w-5xl mx-auto pt-24 pb-20 px-4">
-          <h1 className="text-white text-5xl md:text-6xl font-bold mb-16 text-center tracking-tight" style={{fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>Meet Our Team</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <h1 className="text-white text-4xl md:text-6xl font-bold mb-10 md:mb-16 text-center tracking-tight" style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>Meet Our Team</h1>
+          <div className="grid grid-cols-2 gap-4 md:gap-12">
             {team.map((member, idx) => (
               <div key={member.name} className="flex flex-col items-center text-center">
-                <div className="w-64 h-64 rounded-2xl overflow-hidden mb-6 shadow-lg">
+                <div className="w-full aspect-square max-w-[256px] rounded-2xl overflow-hidden mb-3 md:mb-6 shadow-lg">
                   <Image src={member.image} alt={member.name} width={256} height={256} className="object-cover w-full h-full" />
                 </div>
-                <h2 className="text-2xl font-bold mb-1" style={{color: member.accent, fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>{member.name}</h2>
-                <h3 className="text-base font-semibold mb-3 text-white/90" style={{fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif'}}>{member.role}</h3>
+                <h2 className="text-lg md:text-2xl font-bold mb-1" style={{ color: member.accent, fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>{member.name}</h2>
+                <h3 className="text-sm md:text-base font-semibold mb-3 text-white/90" style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>{member.role}</h3>
               </div>
             ))}
           </div>

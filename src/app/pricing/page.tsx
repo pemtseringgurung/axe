@@ -178,7 +178,7 @@ export default function PricingPage() {
                       className="flex items-start gap-2.5"
                     >
                       <svg
-                        className="w-4 h-4 text-[#D4FF00] mt-0.5 flex-shrink-0"
+                        className="w-4 h-4 text-black mt-0.5 flex-shrink-0"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

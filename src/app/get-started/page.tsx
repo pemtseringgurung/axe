@@ -27,6 +27,7 @@ export default function GetStarted() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,16 +50,44 @@ export default function GetStarted() {
   }, [lastScrollY]);
 
   const handleImpulsiveClick = (value: boolean) => {
+    if (!amount) return; // Enforce amount input
+
     setIsImpulsive(value);
-    setShowReasonInput(value);
-    setAnalysisResult(null); // Clear previous results
-    if (!value) {
+    if (value) {
+      // Yes, impulsive
+      setShowReasonInput(true);
+      setShowSavedMessage(false);
+      setAnalysisResult(null);
+    } else {
+      // No, not impulsive
+      setShowReasonInput(false);
+      setShowSavedMessage(false); // Don't show immediately
       setReason('');
+      setAnalysisResult(null);
     }
+  };
+
+  const handleClear = () => {
+    setAmount('');
+    setIsImpulsive(null);
+    setReason('');
+    setShowReasonInput(false);
+    setAnalysisResult(null);
+    setShowSavedMessage(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Handle "No" case (Not impulsive)
+    if (isImpulsive === false) {
+      setShowSavedMessage(true);
+      // Auto-reset after 5 seconds
+      setTimeout(() => {
+        handleClear();
+      }, 5000);
+      return;
+    }
 
     if (!isImpulsive) {
       console.log('User does not spend impulsively');
@@ -139,116 +168,161 @@ export default function GetStarted() {
 
             {/* Form Card */}
             <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
-              {/* Amount Input */}
-              <div className="mb-8">
-                <label
-                  htmlFor="amount-input"
-                  className="block text-gray-800 text-base font-semibold mb-3"
-                  style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                >
-                  How much did you spend?
-                </label>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-lg font-medium">$</span>
-                  <input
-                    type="number"
-                    id="amount-input"
-                    name="amount-input"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Allow navigation keys, backspace, delete, tab
-                      const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-                      if (allowedKeys.includes(e.key)) return;
 
-                      // Allow digits and decimal point only
-                      if (!/^[0-9.]$/.test(e.key)) {
-                        e.preventDefault();
-                      }
-                    }}
-                    placeholder="Enter amount"
-                    className="w-full bg-gray-50 text-gray-800 text-base rounded-xl px-5 pl-10 py-4 border border-gray-200 focus:outline-none focus:border-[#D4FF00] focus:bg-white transition-all placeholder:text-gray-400"
-                    style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Impulsive Spending Question */}
-              <div className="mb-8">
-                <label
-                  className="block text-gray-800 text-base font-semibold mb-3"
-                  style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                >
-                  Was this an impulsive purchase?
-                </label>
-                <div className="flex gap-3">
+              {showSavedMessage ? (
+                <div className="text-center py-10">
+                  <div className="w-20 h-20 bg-[#D4FF00] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#D4FF00]/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-4" style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
+                    Great job!
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-8" style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
+                    You just saved <span className="font-bold text-green-600">${amount}</span> by not making that impulse purchase.
+                  </p>
                   <button
-                    type="button"
-                    onClick={() => handleImpulsiveClick(true)}
-                    className={`flex-1 rounded-xl px-6 py-4 text-base font-semibold transition-all border-2 ${isImpulsive === true
-                      ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md'
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
-                      }`}
-                    style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleImpulsiveClick(false)}
-                    className={`flex-1 rounded-xl px-6 py-4 text-base font-semibold transition-all border-2 ${isImpulsive === false
-                      ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md'
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
-                      }`}
-                    style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              {/* Reason Input - Only show if impulsive */}
-              {showReasonInput && (
-                <div className="mb-10">
-                  <label
-                    htmlFor="reason-input"
-                    className="block text-gray-800 text-base font-semibold mb-3"
+                    onClick={handleClear}
+                    className="inline-block rounded-xl bg-[#D4FF00] text-black text-base font-bold px-8 py-3 hover:bg-[#c4ef00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D4FF00] shadow-lg transition-all"
                     style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
                   >
-                    Why did you spend impulsively?
-                  </label>
-                  <textarea
-                    id="reason-input"
-                    name="reason-input"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Tell us what happened... (e.g., 'My friends wanted to go out and I didn't want to miss out')"
-                    rows={4}
-                    className="w-full bg-gray-50 text-gray-800 text-base rounded-xl px-5 py-4 border border-gray-200 focus:outline-none focus:border-[#D4FF00] focus:bg-white transition-all placeholder:text-gray-400 resize-none"
-                    style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-                    required
-                  />
+                    Add New Purchase
+                  </button>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Amount Input */}
+                  <div className="mb-8">
+                    <div className="flex justify-between items-center mb-3">
+                      <label
+                        htmlFor="amount-input"
+                        className="block text-gray-800 text-base font-semibold"
+                        style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                      >
+                        How much did you spend?
+                      </label>
+                      {/* Clear button for impulsive flow */}
+                      {isImpulsive === true && (
+                        <button
+                          type="button"
+                          onClick={handleClear}
+                          className="text-sm text-gray-500 hover:text-black font-medium transition-colors underline decoration-gray-300 hover:decoration-black underline-offset-2"
+                          style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                        >
+                          Clear & Reset
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-lg font-medium">$</span>
+                      <input
+                        type="number"
+                        id="amount-input"
+                        name="amount-input"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        onKeyDown={(e) => {
+                          // Allow navigation keys, backspace, delete, tab
+                          const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+                          if (allowedKeys.includes(e.key)) return;
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={!amount || isImpulsive === null || (isImpulsive && !reason) || isAnalyzing}
-                className="w-full rounded-xl bg-[#D4FF00] text-black text-base font-bold px-8 py-4 transition-all hover:bg-[#c4ef00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D4FF00] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#D4FF00]"
-                style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
-              >
-                {isAnalyzing ? 'Analyzing...' : isImpulsive ? 'Analyze My Spending' : 'Submit'}
-              </button>
+                          // Allow digits and decimal point only
+                          if (!/^[0-9.]$/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        className="w-full bg-gray-50 text-gray-800 text-base rounded-xl px-5 pl-10 py-4 border border-gray-200 focus:outline-none focus:border-[#D4FF00] focus:bg-white placeholder:text-gray-400"
+                        style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Impulsive Spending Question */}
+                  <div className="mb-8">
+                    <label
+                      className="block text-gray-800 text-base font-semibold mb-3"
+                      style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                    >
+                      Was this an impulsive purchase?
+                    </label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleImpulsiveClick(true)}
+                        disabled={!amount}
+                        className={`flex-1 rounded-xl px-6 py-4 text-base font-semibold border-2 ${!amount
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : isImpulsive === true
+                            ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
+                          }`}
+                        style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleImpulsiveClick(false)}
+                        disabled={!amount}
+                        className={`flex-1 rounded-xl px-6 py-4 text-base font-semibold border-2 ${!amount
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : isImpulsive === false
+                            ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
+                          }`}
+                        style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Reason Input - Only show if impulsive */}
+                  {showReasonInput && (
+                    <div className="mb-10">
+                      <label
+                        htmlFor="reason-input"
+                        className="block text-gray-800 text-base font-semibold mb-3"
+                        style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                      >
+                        Why did you spend impulsively?
+                      </label>
+                      <textarea
+                        id="reason-input"
+                        name="reason-input"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Tell us what happened... (e.g., 'My friends wanted to go out and I didn't want to miss out')"
+                        rows={4}
+                        className="w-full bg-gray-50 text-gray-800 text-base rounded-xl px-5 py-4 border border-gray-200 focus:outline-none focus:border-[#D4FF00] focus:bg-white placeholder:text-gray-400 resize-none"
+                        style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={!amount || isImpulsive === null || (isImpulsive && !reason) || isAnalyzing}
+                    className="w-full rounded-xl bg-[#D4FF00] text-black text-base font-bold px-8 py-4 hover:bg-[#c4ef00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D4FF00] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#D4FF00]"
+                    style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                  >
+                    {isAnalyzing ? 'Analyzing...' : isImpulsive ? 'Analyze My Spending' : 'Submit'}
+                  </button>
+                </>
+              )}
             </form>
 
 
             {analysisResult && (
-              <div className="mt-8 bg-white rounded-3xl p-8 md:p-12 shadow-2xl animate-fade-in">
+              <div className="mt-8 bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
-                    OK, let's talk about it �
+                    OK, let's talk about it
                   </h2>
                   <p className="text-gray-700 text-base leading-relaxed" style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
                     You spent <span className="font-semibold">${analysisResult.actual_spent}</span> and it feels bad. Here's what's really happening...
@@ -294,7 +368,7 @@ export default function GetStarted() {
                     {analysisResult.recommendations.map((rec, idx) => (
                       <div
                         key={idx}
-                        className="p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#D4FF00] transition-all"
+                        className="p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#D4FF00]"
                       >
                         <div className="flex gap-3 mb-2">
                           <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#D4FF00] flex items-center justify-center font-bold text-black text-sm" style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
@@ -315,11 +389,20 @@ export default function GetStarted() {
                 </div>
 
                 {/* Closing Message */}
-                <div className="mt-6 p-5 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200">
+                <div className="mt-6 p-5 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200 mb-8">
                   <p className="text-gray-700 text-base leading-relaxed" style={{ fontFamily: 'Switzer, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}>
                     You recognized the pattern. That's already progress. Try one thing from above today. 💪
                   </p>
                 </div>
+
+                {/* Add New Purchase Button */}
+                <button
+                  onClick={handleClear}
+                  className="w-full rounded-xl bg-[#D4FF00] text-black text-base font-bold px-8 py-4 hover:bg-[#c4ef00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D4FF00] shadow-lg transition-all"
+                  style={{ fontFamily: 'Satoshi, -apple-system, BlinkMacSystemFont, \'Segoe UI\', system-ui, sans-serif' }}
+                >
+                  Add New Purchase
+                </button>
               </div>
             )}
           </div>

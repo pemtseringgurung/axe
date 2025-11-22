@@ -77,39 +77,50 @@ class ImpulsiveSpendingAgent:
         workflow = StateGraph(SpendingState)
         
         # Add nodes
-        workflow.add_node("analyze_spending", self.analyze_spending_combined)
-        workflow.add_node("generate_recommendations", self.generate_recommendations)
+        workflow.add_node("analyze_and_recommend", self.analyze_and_recommend)
         
         # Define the flow
-        workflow.set_entry_point("analyze_spending")
-        workflow.add_edge("analyze_spending", "generate_recommendations")
-        workflow.add_edge("generate_recommendations", END)
+        workflow.set_entry_point("analyze_and_recommend")
+        workflow.add_edge("analyze_and_recommend", END)
         
         return workflow.compile()
     
-    def analyze_spending_combined(self, state: SpendingState) -> SpendingState:
+    def analyze_and_recommend(self, state: SpendingState) -> SpendingState:
         """
-        Combined step: Deeply analyze reason and identify triggers.
+        Combined step: Analyze spending, identify triggers, AND generate recommendations in one go.
         """
         system_prompt = """You are a behavioral psychologist mixed with a caring friend who sees through bullshit.
 
 Your expertise: Consumer psychology, behavioral economics, cognitive biases, emotional triggers, social dynamics.
 
-MISSION: Analyze this spending event to uncover the truth.
+MISSION: Analyze this spending event to uncover the truth AND provide solutions.
 
-Output a JSON object with these 2 fields:
+Output a SINGLE JSON object with these fields:
 1. "underlying_reason": ONE clear sentence explaining the DEEP psychological reason (be specific, not generic).
 2. "triggers": Array of 2-3 specific behavioral triggers (e.g., "Social pressure", "FOMO", "Instant gratification").
+3. "recommendations": Array of 3-4 objects, each with:
+    - "action": A SPECIFIC, ACTIONABLE technique (from CBT, behavioral economics, habit formation).
+    - "why": Brief explanation of the psychology behind why it works.
 
 Think about:
 - What psychological need were they trying to fill?
 - What cognitive bias was at play?
 - How far over budget is this?
 
-Example:
+Example Output:
 {
   "underlying_reason": "You're using purchases as a quick dopamine hit to cope with work stress.",
-  "triggers": ["Stress relief seeking", "Instant gratification"]
+  "triggers": ["Stress relief seeking", "Instant gratification"],
+  "recommendations": [
+    {
+      "action": "Set a 48-hour rule: Save items in cart, wait 2 days before buying.",
+      "why": "Dopamine spike fades after 48 hours, letting rational brain catch up."
+    },
+    {
+      "action": "Replace the habit: When stressed, do 5 minutes of breathing instead.",
+      "why": "Addresses the physiological stress response without spending."
+    }
+  ]
 }
 
 Be REAL. Be SPECIFIC. No generic BS."""
@@ -121,7 +132,7 @@ Overspent by: ${state['actual_spent'] - state['budget_amount']}
 What they said: "{state['spending_reason']}"
 Category: {state['spending_category']}
 
-Analyze this. Return JSON only.
+Analyze this and give recommendations. Return JSON only.
 """
 
         messages = [
@@ -141,102 +152,41 @@ Analyze this. Return JSON only.
         
         try:
             analysis = json.loads(content)
+            
+            # Extract fields with fallbacks
             underlying_reason = analysis.get("underlying_reason", "You might be spending to fill an emotional need.")
             triggers = analysis.get("triggers", ["Emotional spending"])
+            recommendations = analysis.get("recommendations", [])
             
             # Ensure types
             if not isinstance(triggers, list): triggers = [str(triggers)]
+            if not isinstance(recommendations, list): recommendations = []
+            
+            # Fallback for recommendations if empty or malformed
+            if not recommendations:
+                recommendations = [
+                    {"action": "Set a 24-hour wait rule before purchases", "why": "Gives your rational brain time to catch up"},
+                    {"action": "Track what triggers your spending urges", "why": "Awareness is the first step to change"},
+                    {"action": "Find a healthier dopamine source", "why": "Address the need without spending"}
+                ]
             
         except Exception as e:
             print(f"JSON parse error: {e}")
             # Fallback
             underlying_reason = "You might be spending to fill an emotional need - let's look deeper at this pattern."
             triggers = ["Emotional spending", "Impulse control"]
+            recommendations = [
+                {"action": "Set a 24-hour wait rule before purchases", "why": "Gives your rational brain time to catch up"},
+                {"action": "Track what triggers your spending urges", "why": "Awareness is the first step to change"}
+            ]
         
         return {
             **state,
             "underlying_reason": underlying_reason,
             "behavioral_triggers": triggers[:3],
+            "recommendations": recommendations[:4],
             "analysis_results": [{
-                "step": "combined_analysis",
-                "content": response.content
-            }]
-        }
-    
-    def generate_recommendations(self, state: SpendingState) -> SpendingState:
-        """Generate evidence-based recommendations from real psychology & behavioral research"""
-        system_prompt = """You give recommendations based on ACTUAL behavioral psychology research and proven techniques.
-
-Draw from:
-- CBT (Cognitive Behavioral Therapy) techniques
-- Behavioral economics research (Kahneman, Thaler, Ariely)
-- Habit formation research (James Clear, BJ Fogg)
-- Impulse control strategies from psychology
-- Real techniques people use successfully (Reddit r/personalfinance, financial therapists)
-
-Requirements:
-- 3-4 recommendations (no more)
-- Each is a SPECIFIC, ACTIONABLE technique
-- Based on real research/proven methods
-- Not generic ("make a budget", "save more")
-- Address their SPECIFIC psychological trigger
-- Explain briefly WHY it works (the psychology behind it)
-
-Format: JSON array of objects with "action" and "why"
-
-Example:
-[
-  {
-    "action": "Set a 48-hour rule: Save items in cart, wait 2 days before buying.",
-    "why": "Dopamine spike fades after 48 hours, letting rational brain catch up."
-  }
-]
-
-Be SPECIFIC. Use REAL techniques. Show you understand psychology."""
-
-        user_message = f"""
-Deep reason: {state['underlying_reason']}
-Triggers: {', '.join(state['behavioral_triggers'])}
-What they said: "{state['spending_reason']}"
-
-Give 3-4 evidence-based techniques to address THIS specific pattern. JSON only.
-"""
-
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message)
-        ]
-        
-        response = self.llm.invoke(messages)
-        
-        # Parse recommendations
-        content = response.content.strip()
-        
-        # Remove markdown code blocks if present
-        if content.startswith('```'):
-            content = content.split('```')[1]
-            if content.startswith('json'):
-                content = content[4:]
-            content = content.strip()
-        
-        try:
-            recommendations = json.loads(content)
-            if not isinstance(recommendations, list):
-                recommendations = [str(recommendations)]
-        except Exception as e:
-            print(f"JSON parse error in recommendations: {e}")
-            # Fallback
-            recommendations = [
-                {"action": "Set a 24-hour wait rule before purchases", "why": "Gives your rational brain time to catch up"},
-                {"action": "Track what triggers your spending urges", "why": "Awareness is the first step to change"},
-                {"action": "Find a healthier dopamine source", "why": "Address the need without spending"}
-            ]
-        
-        return {
-            **state,
-            "recommendations": recommendations,
-            "analysis_results": [{
-                "step": "recommendations",
+                "step": "combined_analysis_and_recommendation",
                 "content": response.content
             }]
         }
